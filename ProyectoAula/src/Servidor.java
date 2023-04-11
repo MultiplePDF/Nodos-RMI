@@ -1,101 +1,171 @@
+
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.io.*;
 import java.util.Base64;
- 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import com.aspose.words.*;
+ 
 
 public class Servidor extends UnicastRemoteObject implements contratoRMI {
 
 	protected Servidor() throws RemoteException {
 		super();
-		// TODO Auto-generated constructor stub
+
 	}
 
 	@Override
-	public String conversion(Sublote objeto) throws RemoteException {
+	public Sublote conversionOffice(Sublote objeto) throws RemoteException {
+		
+		ExecutorService executor = Executors.newFixedThreadPool(2);
 
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public String convertirArchivo(Archivo obj) throws IOException {
-		
-		System.out.println("OBTENCION DE DOCUMENTO: " + obj.nombre);
-		String archivo[] =obj.nombre.split("\\.");
-		String extension = "."+archivo[archivo.length-1];
-		
-		String nombre = "";
-		for (int i = 0; i < archivo.length-1; i++) {
-			nombre = nombre + archivo[i];
-		}
-		
-		System.out.println(nombre);
-		String base64 = obj.getBase64();
-		
-
-		
-		
-
-		// Decodificar archivo Word en Base64
-		byte[] decoded = Base64.getDecoder().decode(base64);
-		
-		/*
-		 * LOS ARCHIVOS SE GUARDAN EN C:\Users\USUARIO\AppData\Local\Temp\ Varia de
-		 * acuerdo al computador C:\Users\admin\AppData\Local\Temp\
-		 */
-		
-		
-
-
-		File tempFile = File.createTempFile("document",  extension);
-		FileOutputStream fos = new FileOutputStream(tempFile);
-		fos.write(decoded);
-		fos.close();
-		
-		
-		 
-		System.out.println("Termino " + tempFile);
-		System.out.println(String.valueOf(tempFile));
-		System.out.println("C:\\Users\\admin\\Pictures\\DOCUMENTOS_CONVERTIDOS\\"+nombre+".pdf");
-		
-		
-		//CONVERSION EN PDF 
-		
+		System.out.println("Se esta haciendo la conversion");
+		Archivo[] archivos = objeto.archivos;
+		Archivo archivospdf[] = new Archivo[archivos.length];
 		
 	 
-		try {
-			Document doc = new Document(String.valueOf(tempFile));
-			System.out.println(doc);
+ 
+
+		for (int i = 0; i < archivos.length; i++) {
+
+			Callable<Archivo> worker = new ConvertirArchivo(archivos[i]);
+			Future<Archivo> future = executor.submit(worker);
+			
+		 
+			try {
+				Archivo temp = future.get();
+				archivospdf[i] = temp;
+			} catch (InterruptedException | ExecutionException e) {
+				 
+				e.printStackTrace();
+			}
 			 
-			//doc.save("C:\\Users\\admin\\Pictures\\DOCUMENTOS_CONVERTIDOS\\"+nombre+".pdf");
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+			
+			 
+
+		}
+		
+		executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+       
+		Sublote ConversionRealizada = new Sublote(objeto.idLote, objeto.idSublote, objeto.idUsuario, archivospdf);
+
+		return ConversionRealizada;
+	}
+
+
+
+	@Override
+	public Sublote conversionURL(Sublote objeto) throws RemoteException {
+
+
+
+		ExecutorService executor = Executors.newFixedThreadPool(3);
+
+		System.out.println("SE ESTA HACIENDO LA CONVERSION ");
+		Archivo[] archivos = objeto.archivos;
+		Archivo archivospdf[] = new Archivo[archivos.length];
+		
+	 
+ 
+
+		for (int i = 0; i < archivos.length; i++) {
+
+			Callable<Archivo> worker = new ConvertirURL(archivos[i]);
+			Future<Archivo> future = executor.submit(worker);
+			
+		 
+			try {
+				Archivo temp = future.get();
+				System.out.println(temp.toString());
+				archivospdf[i] = temp;
+				
+			} catch (InterruptedException | ExecutionException e) {
+				 
+				e.printStackTrace();
+			}
+			 
+			
+			 
+
+		}
+		
+		executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+       
+		Sublote ConversionRealizada = new Sublote(objeto.idLote, objeto.idSublote, objeto.idUsuario, archivospdf);
+
+		return ConversionRealizada;
+	}
+	
+	
+	
+	public static void main(String[] args) {
+		
+		
+		Archivo cliente4 = new Archivo("1","https://jarroba.com/multitarea-e-hilos-en-java-con-ejemplos-thread-runnable/", 1);
+		Archivo cliente5 = new Archivo("2", "https://www.autodraw.com/", 2);
+		Archivo cliente6 = new Archivo("3", "http://www.homestyler.com/", 3);
+		
+		Archivo[] l = new Archivo[3];
+		
+		l[0] = cliente4;
+		l[1] = cliente5;
+		l[2] = cliente6;
+
+		
+		Sublote completo = new Sublote("12324","1232415","12324",l);
+		
+		Servidor server;
+		try {
+			server = new Servidor();
+			Sublote nuevo = server.conversionURL(completo);
+			System.out.println("TERMINO");
+			Archivo[] recibir = nuevo.archivos;
+			
+			for (int i = 0; i < recibir.length; i++) {
+				
+			}
+	 
+			
+			// DECODIFICAR ARCHIVOS
+			byte[] decoded = Base64.getDecoder().decode(recibir[0].url);
+
+			/*
+			 * LOS ARCHIVOS SE GUARDAN EN C:\Users\USUARIO\AppData\Local\Temp\ Varia de
+			 * acuerdo al computador C:\Users\admin\AppData\Local\Temp\
+			 */
+ 
+			try {
+				File tempFile = File.createTempFile("ejemplo", "pdf");
+				FileOutputStream fos = new FileOutputStream(tempFile);
+				fos.write(decoded);
+				fos.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			 
+			 
+		} catch (RemoteException e) {
+		 
 			e.printStackTrace();
 		}
-	 
-
-		return null;
-
-	}
-
-	public static void main(String[] args) throws IOException {
-		// Obtener archivo Word en formato Base64
-		FileInputStream fis = new FileInputStream(new File("E:\\Taller5 sistemas de archivos linux.docx"));
-		byte[] bytes = new byte[(int) fis.available()];
-		fis.read(bytes);
-		String base64String = new String(Base64.getEncoder().encode(bytes));
-
+ 
 		
-		Servidor server = new Servidor();
-		Archivo nuevo = new Archivo("12354",base64String,"Taller5 sistemas de archivos linux.docx");
-		
-		System.out.println(nuevo.toString());
-		
-		server.convertirArchivo(nuevo);
 		
 		
 	}
+
+
 
 }

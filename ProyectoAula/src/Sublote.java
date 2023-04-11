@@ -1,6 +1,8 @@
+
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class Sublote {
+public class Sublote implements Serializable{
 	
 	
 	String idSublote;
