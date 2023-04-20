@@ -71,8 +71,8 @@ public class ConvertirArchivo implements Callable<Archivo> {
 		
 		System.out.println(Thread.currentThread().getName());
 
-		System.out.println("libreoffice --convert-to pdf --outdir /home/nodo1-admin/convertidos/"+ " " + tempFile);
-		Runtime.getRuntime().exec("libreoffice --convert-to pdf --outdir /home/nodo1-admin/convertidos"+ " " + tempFile);
+		System.out.println("libreoffice --convert-to pdf --outdir /home/nodo1-admin/convertidos/ \"/tmp/"  + tempFile +"\" --headless");
+		Runtime.getRuntime().exec("libreoffice --convert-to pdf --outdir /home/nodo1-admin/convertidos/ \"/tmp/"  + tempFile +"\" --headless");
 		
 		
 		String documentoConvertido[] = tempFile.getName().split("\\.");
